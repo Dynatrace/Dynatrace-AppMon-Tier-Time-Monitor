@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.2"?>
+<!-- plugin.xml file written by dynaTrace Client 6.2.2 -->
+<plugin>
+  <extension point="com.dynatrace.diagnostics.pdk.pluginconfig" id="com.dynatrace.TierTimeMonitor" name="Tier Time Monitor">
+    <information>
+      <category value="" />
+      <displayname value="Tier Time Monitor" />
+      <description value="Retrieves the time spent per tier" />
+      <supportlevel value="unsupported" />
+    </information>
+    <configuration>
+      <property key="protocol" label="Protocol" type="list" description="HTTP Protocol to access dynaTrace server" default="http">
+        <list>
+          <item value="http" />
+          <item value="https" />
+        </list>
+      </property>
+      <property key="httpPort" label="Port" type="long" description="Port to access dynaTrace server (default=8020)" default="8020" />
+      <property key="username" label="username" type="string" description="username to access dynaTrace server" default="" multiline="false" />
+      <property key="password" label="Password" type="password" description="password" default="" />
+      <property key="aggregation" label="Aggregation" type="list" description="min/avg/max" default="avg">
+        <list>
+          <item value="min" />
+          <item value="avg" />
+          <item value="max" />
+        </list>
+      </property>
+      <property key="splitChoice" label="Split by" type="list" description="Split of the retrieved metrics" default="Agent Group">
+        <list>
+          <item value="Agent Name" />
+          <item value="Agent Group" />
+          <item value="Technology" />
+        </list>
+      </property>
+      <property key="systemProfileFilter" label="System Profile Filter" type="string" description="System Profile for which metrics should be retrieved" default="" multiline="false" />
+      <property key="timeframeFilter" label="Timeframe Filter" type="list" description="Timeframe Filter (last x minutes/seconds)" default="30 Seconds">
+        <list>
+          <item value="10 Seconds" />
+          <item value="30 Seconds" />
+          <item value="60 Seconds" />
+          <item value="5 Minutes" />
+          <item value="15 Minutes" />
+        </list>
+      </property>
+      <property key="filterBoolean" label="Additional Filters?" type="boolean" description="Would you like to add additional filters?" default="false" />
+      <property key="agentFilterBoolean" label="Filter by Agent Group / Pattern?" type="boolean" description="Filter by Agent Group / Pattern" default="false">
+        <visibility>
+          <rule key="filterBoolean" value="true" />
+        </visibility>
+      </property>
+      <property key="agentFilter" label="Agent Filter Type" type="list" description="Agent Filter Type" default="Agent Group">
+        <list>
+          <item value="Agent Group" />
+          <item value="Agent Pattern" />
+        </list>
+        <visibility>
+          <rule key="agentFilterBoolean" value="true" />
+        </visibility>
+      </property>
+      <property key="agentGroupFilter" label="Agent Group Filter" type="string" description="Agent Group" default="" multiline="false">
+        <visibility>
+          <rule key="agentFilter" value="Agent Group" />
+        </visibility>
+      </property>
+      <property key="agentPatternMatchType" label="Agent Pattern Match Type" type="list" description="starts, ends, contains, or matches" default="starts">
+        <list>
+          <item value="starts" />
+          <item value="ends" />
+          <item value="contains" />
+          <item value="matches" />
+        </list>
+        <visibility>
+          <rule key="agentFilter" value="Agent Pattern" />
+        </visibility>
+      </property>
+      <property key="agentPatternFilter" label="Agent Pattern Filter" type="string" description="My property description ..." default="" multiline="false">
+        <visibility>
+          <rule key="agentFilter" value="Agent Pattern" />
+        </visibility>
+      </property>
+      <property key="btBoolean" label="Filter by Business Transaction?" type="boolean" description="Filter by Business Transaction?" default="false">
+        <visibility>
+          <rule key="filterBoolean" value="true" />
+        </visibility>
+      </property>
+      <property key="btFilter" label="Business Transaction Filter" type="string" description="Business Transaction Filter" default="" multiline="false">
+        <visibility>
+          <rule key="btBoolean" value="true" />
+        </visibility>
+      </property>
+    </configuration>
+  </extension>
+  <extension point="com.dynatrace.diagnostics.pdk.monitor" id="com.dynatrace.TierTimeMonitor.monitor" name="Tier Time Monitor">
+    <plugin configid="com.dynatrace.TierTimeMonitor" class="com.dynatrace.monitor.TierTimeMonitor" />
+  </extension>
+  <extension point="com.dynatrace.diagnostics.pdk.monitormetricgroup" id="com.dynatrace.TierTimeMonitor.monitor.metricgroup" name="Tier Time">
+    <metricgroup monitorid="com.dynatrace.TierTimeMonitor.monitor">
+      <metric defaultrate="purepath" name="Response Time" unit="ms" description="response time from tier">
+        <property key="Tier Filter" value="none" optional="false" />
+      </metric>
+      <metric defaultrate="purepath" name="Execution Time" unit="ms" description="execution time of tier">
+        <property key="Tier Filter" value="none" optional="false" />
+      </metric>
+      <metric defaultrate="purepath" name="Execution CPU Time" unit="ms" description="execution CPU time per tier">
+        <property key="Tier Filter" value="none" optional="false" />
+      </metric>
+    </metricgroup>
+  </extension>
+</plugin>
