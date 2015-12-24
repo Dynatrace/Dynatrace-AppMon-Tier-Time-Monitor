@@ -6,32 +6,33 @@ Tier Time Monitor
 The Tier Time Monitor plugin queries a built-in Transaction Flow Dashboard to return response time, execution time, and execution CPU time.
 Metrics can be split by agent name, agent group, or technology. 
 Metrics can also be filtered by agent group, agent name, and business transaction. 
-The plugin supports both HTTP and HTTPS.
-
-Plugin Parameters:
-	Protocol (required) - http protocol to access the dynaTrace server rest interface
-	Port  (required) - http port to access the dynaTrace server rest interface
-	username (required) - username to log into the dynaTrace server
-	password (required) - password to log into the dynaTrace server
-	Aggregation (required) - min/avg/max aggregation of measures
-	Split by (required) - split tier time by agent name, agent group, or technology
-	System Profile Filter (required) - System Profile Name
-	Timeframe Filter (required) - Timeframe for tier times
-	Additional Filters? (optional) - yes/no
-	Filter by Agent Group / Pattern (optional) - yes/no
-	Agent Filter Type (optional) - Filter by agent group or agent pattern
-	Agent Group Filter (optional) - Agent group name
-	Agent Pattern Match Type (optional) - agent pattern filter (starts, ends, or match)
-	Agent Pattern Filter (optional) - Pattern on which to filter the agents
-	Filter by Business Transaction (optional) - yes/no
-	Business Transaction Filter (optional) - Business Transaction name
-
-
-Measures:
-	Response Time
-	Execution Time
-	Execution CPU Time
-	Optional Measure Parameters:
-		Tier Filter (required) - Tier name (none = all tiers)
-
+The plugin supports both HTTP and HTTPS.<br />
+<br />
+<br />
+Plugin Parameters:<br />
+	Protocol (required) - http protocol to access the dynaTrace server rest interface<br />
+	Port  (required) - http port to access the dynaTrace server rest interface<br />
+	username (required) - username to log into the dynaTrace server<br />
+	password (required) - password to log into the dynaTrace server<br />
+	Aggregation (required) - min/avg/max aggregation of measures<br />
+	Split by (required) - split tier time by agent name, agent group, or technology<br />
+	System Profile Filter (required) - System Profile Name<br />
+	Timeframe Filter (required) - Timeframe for tier times<br />
+	Additional Filters? (optional) - yes/no<br />
+	Filter by Agent Group / Pattern (optional) - yes/no<br />
+	Agent Filter Type (optional) - Filter by agent group or agent pattern<br />
+	Agent Group Filter (optional) - Agent group name<br />
+	Agent Pattern Match Type (optional) - agent pattern filter (starts, ends, or match)<br />
+	Agent Pattern Filter (optional) - Pattern on which to filter the agents<br />
+	Filter by Business Transaction (optional) - yes/no<br />
+	Business Transaction Filter (optional) - Business Transaction name<br />
+<br />
+<br />
+Measures:<br />
+	Response Time<br />
+	Execution Time<br />
+	Execution CPU Time<br />
+	Optional Measure Parameters:<br />
+		Tier Filter (required) - Tier name (none = all tiers)<br />
+<br />
 Find further information in the [dynaTrace community](https://community.dynatrace.com/community/display/DL/Tier-Time-Monitor)
