@@ -15,24 +15,16 @@ package com.dynatrace.monitor;
 
 import com.dynatrace.diagnostics.pdk.*;
 import java.util.logging.Logger;
-import java.util.logging.Logger;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
-import java.net.MalformedURLException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.logging.Logger;
-import java.util.Date;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.*;
+import java.util.List;
+import java.util.ArrayList;
 
 import javax.net.ssl.*;
-
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 
@@ -45,10 +37,12 @@ import javax.xml.xpath.XPathFactory;
 import javax.xml.xpath.XPathVariableResolver;
 import javax.xml.namespace.QName;
 
-import org.apache.http.client.ClientProtocolException;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.NamedNodeMap;
+
+import org.apache.http.client.ClientProtocolException;
+import java.io.IOException;
 
 public class TierTimeMonitor implements Monitor {
 
