@@ -2,14 +2,14 @@
 Tier Time Monitor
 
 #<img src="images\icon.png" alt="Tier-Time-Monitor"><br> 
-
-The Tier Time Monitor plugin queries a built-in Transaction Flow Dashboard to return response time, execution time, and execution CPU time.
-Metrics can be split by agent name, agent group, or technology. 
-Metrics can also be filtered by agent group, agent name, and business transaction. 
+<br />
+The Tier Time Monitor plugin queries a built-in Transaction Flow Dashboard to return response time, execution time, and execution CPU time. <br />
+Metrics can be split by agent name, agent group, or technology. <br />
+Metrics can also be filtered by agent group, agent name, and business transaction. <br />
 The plugin supports both HTTP and HTTPS.<br />
 <br />
 <br />
-Plugin Parameters:<br />
+<b>Plugin Parameters:</b><br />
 	Protocol (required) - http protocol to access the dynaTrace server rest interface<br />
 	Port  (required) - http port to access the dynaTrace server rest interface<br />
 	username (required) - username to log into the dynaTrace server<br />
@@ -28,7 +28,7 @@ Plugin Parameters:<br />
 	Business Transaction Filter (optional) - Business Transaction name<br />
 <br />
 <br />
-Measures:<br />
+<b>Measures:</b><br />
 	Response Time<br />
 	Execution Time<br />
 	Execution CPU Time<br />
