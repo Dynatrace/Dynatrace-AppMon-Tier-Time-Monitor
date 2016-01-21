@@ -1,5 +1,4 @@
-# Dynatrace-Tier-Time-Monitor
-Tier Time Monitor
+## Tier Time Monitor Plugin
 
 #<img src="images\icon.png" alt="Tier-Time-Monitor"><br> 
 <br />
@@ -35,4 +34,4 @@ The plugin supports both HTTP and HTTPS.<br />
 	Optional Measure Parameters:<br />
 		Tier Filter (required) - Tier name (none = all tiers)<br />
 <br />
-Find further information in the [dynaTrace community](https://community.dynatrace.com/community/display/DL/Tier-Time-Monitor)
+Find further information in the [Dynatrace community](https://community.dynatrace.com/community/display/DL/Tier+Time+Monitor+Plugin)
