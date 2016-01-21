@@ -1,6 +1,6 @@
 ## Tier Time Monitor Plugin
 
-#<img src="images\icon.png" alt="Tier-Time-Monitor"><br> 
+![images/icon.png](images/icon.png) 
 <br />
 The Tier Time Monitor plugin queries a built-in Transaction Flow Dashboard to return response time, execution time, and execution CPU time. <br />
 Metrics can be split by agent name, agent group, or technology. <br />
