@@ -34,4 +34,4 @@ The plugin supports both HTTP and HTTPS.<br />
 	Optional Measure Parameters:<br />
 		Tier Filter (required) - Tier name (none = all tiers)<br />
 <br />
-Find further information in the [Dynatrace community](https://community.dynatrace.com/community/display/DL/Tier+Time+Monitor+Plugin)
+Find further information in the [Dynatrace community](https://community.dynatrace.com/community/display/DL/Tier+Time+Monitor+Fastpack)
