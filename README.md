@@ -2,7 +2,7 @@
 
 ![images/icon.png](images/icon.png) 
 <br />
-The Tier Time Monitor plugin queries a built-in Transaction Flow Dashboard to return response time, execution time, and execution CPU time. <br />
+The Tier Performance Metrics Monitor plugin queries a built-in Transaction Flow Dashboard to return response time, execution time, execution CPU time, transaction count, and transaction count rate. <br />
 Metrics can be split by agent name, agent group, or technology. <br />
 Metrics can also be filtered by agent group, agent name, and business transaction. <br />
 The plugin supports both HTTP and HTTPS.<br />
@@ -31,6 +31,8 @@ The plugin supports both HTTP and HTTPS.<br />
 	Response Time<br />
 	Execution Time<br />
 	Execution CPU Time<br />
+	Transaction Count<br />
+	Transaction Count Rate<br />
 	Optional Measure Parameters:<br />
 		Tier Filter (required) - Tier name (none = all tiers)<br />
 <br />
