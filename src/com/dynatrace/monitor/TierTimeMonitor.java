@@ -403,12 +403,7 @@ public class TierTimeMonitor implements Monitor {
 			else if (measure.getParameter("Tier Filter").equals(comparisonString)){
 				dynamicMeasure = env.createDynamicMeasure(measure, splitOption, measureSplitName);
 				dynamicMeasure.setValue(resultValue);
-			}
-			/* else {
-				log.fine("MeasureName: " + measure.getMeasureName());
-				dynamicMeasure = env.createDynamicMeasure(measure, "Tier", measureSplitName);
-				dynamicMeasure.setValue(resultValue);
-			} */			
+			}			
 		}
 	}
 	
