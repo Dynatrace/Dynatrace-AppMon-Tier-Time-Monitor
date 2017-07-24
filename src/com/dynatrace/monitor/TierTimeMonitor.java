@@ -1,11 +1,12 @@
 
  /**
   ***************************************
-  * Tier Time Monitor Plugin
+  * Tier Performance Metics Monitor Plugin
   ***************************************
   * Author: Daniel Pohanka (Dynatrace)
-  * Version: 1.0.3.1
+  * Version: 2.0.1
   * Created: 12/21/2015
+  * Modified: 7/24/2017
   *
   * This plugin retrieves the response, execution, and CPU time per trier in the transaction flow dashlet.
   * For information, please visit https://github.com/dynaTrace/Dynatrace-Tier-Time-Monitor
@@ -21,8 +22,6 @@ import java.net.URLConnection;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.List;
-import java.util.ArrayList;
 
 import javax.net.ssl.*;
 import java.security.SecureRandom;
@@ -34,8 +33,10 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import javax.xml.xpath.XPathVariableResolver;
+//import javax.xml.xpath.XPathVariableResolver;
 import javax.xml.namespace.QName;
+
+import java.util.*; 
 
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
@@ -49,10 +50,13 @@ public class TierTimeMonitor implements Monitor {
 	private static final Logger log = Logger.getLogger(TierTimeMonitor.class.getName());
 	
 	// measure constants
-	private static final String METRIC_GROUP = "Tier Time";
+	private static final String METRIC_GROUP_1 = "Tier Time";
+	private static final String METRIC_GROUP_2 = "Tier Count";
 	private static final String MSR_ResponseTime = "Response Time";
 	private static final String MSR_ExecTime = "Execution Time";
 	private static final String MSR_ExecCPUTime = "Execution CPU Time";
+	private static final String MSR_TransactionCount = "Transaction Count";
+	private static final String MSR_TransactionCountRate = "Transaction Count Rate";
 
 	//variables
 	private Collection<MonitorMeasure>  measures  = null;
@@ -64,7 +68,8 @@ public class TierTimeMonitor implements Monitor {
 	private String password;
 	private String responseTimeMeasure;
 	private String execTimeMeasure;
-	private String execCPUTimeMeasure; 
+	private String execCPUTimeMeasure;
+	private String transactionCountMeasure;
 	private MonitorMeasure dynamicMeasure;
 	private NodeList xpathNodeList;	
 	private String splitOption;
@@ -87,9 +92,9 @@ public class TierTimeMonitor implements Monitor {
 	@Override
 	public Status setup(MonitorEnvironment env) throws Exception {
 		
-		log.fine("*****BEGIN PLUGIN LOGGING*****");
-		log.fine("Entering setup method");
-		log.fine("Entering variables from plugin.xml");
+		log.finer("*****BEGIN PLUGIN LOGGING*****");
+		log.finer("Entering setup method");
+		log.finer("Entering variables from plugin.xml");
 		
 		urlprotocol = env.getConfigString("protocol");
 		urlport = env.getConfigLong("httpPort").intValue();
@@ -102,26 +107,27 @@ public class TierTimeMonitor implements Monitor {
 				return new Status(Status.StatusCode.ErrorInternal);
 		}
 		
-		log.fine("URL Protocol: " + urlprotocol);
-		log.fine("URL Port: " + urlport);
-		log.fine("Username: " + username);
+		log.finer("URL Protocol: " + urlprotocol);
+		log.finer("URL Port: " + urlport);
+		log.finer("Username: " + username);
 		
 		//set up measures
 		String aggregation = env.getConfigString("aggregation");
 		responseTimeMeasure = "response_" + aggregation;
 		execTimeMeasure = "exec_" + aggregation;
 		execCPUTimeMeasure = "exec_cpu_" + aggregation;
+		transactionCountMeasure = "remoting_count"; // new code for count
 	
 		//determine splitting (Agent Name / Agent Group / Technology)
 		splitOption = env.getConfigString("splitChoice");
-		log.fine("splitChoice: " + splitOption);
+		log.fine("split results by: " + splitOption);
 		if (splitOption.equals("Agent Group")){
 			splitOption = "group";}
 		else if (splitOption.equals("Agent Name")){
 			splitOption = "name";}
 		else if (splitOption.equals("Technology")){
 			splitOption = "technology";}
-		log.fine("splitOption: " + splitOption);
+		log.finer("splitOption: " + splitOption);
 		
 		//Create Report Url
 		dynaTraceURL = "/rest/management/reports/create/TransactionFlow?type=XML&format=XML+Export";
@@ -151,8 +157,8 @@ public class TierTimeMonitor implements Monitor {
 			}
 		}
 		
-		log.fine("Report URL: " + dynaTraceURL);
-		log.fine("Exiting setup method");
+		log.finer("Report URL: " + dynaTraceURL);
+		log.finer("Exiting setup method");
 		
 		return new Status(Status.StatusCode.Success);
 	}
@@ -181,23 +187,23 @@ public class TierTimeMonitor implements Monitor {
 	@Override
 	public Status execute(MonitorEnvironment env) throws Exception {
 				
-		log.fine("Entering execute method");
+		log.finer("Entering execute method");
 		
-		log.fine("Entering URL Setup");
+		log.finer("Entering URL Setup");
 		URL overviewurl = new URL(urlprotocol, env.getHost().getAddress(), urlport, dynaTraceURL);		
-		log.info("Executing URL: " + overviewurl.toString());
+		log.fine("Executing URL: " + overviewurl.toString());
 		
 		try {
 			
 			//login to dynatrace server
-			log.fine("Entering username/password setup");
+			log.finer("Entering username/password setup");
 			String userpass = username + ":" + password;
 			String basicAuth = "Basic " + javax.xml.bind.DatatypeConverter.printBase64Binary(userpass.getBytes());
 			
 			disableCertificateValidation();
 				
 			//URL to grab XML file
-			log.fine("Entering XML file grab");
+			log.finer("Entering XML file grab");
 			connection = overviewurl.openConnection();
 			connection.setRequestProperty("Authorization", basicAuth);
 			connection.setConnectTimeout(50000);
@@ -212,34 +218,30 @@ public class TierTimeMonitor implements Monitor {
 			//used to store each unique tier and its values
 			Set<String> uniqueTierSet = new HashSet<String>();
 			xpathNodeList = (NodeList) xpath.evaluate("/dashboardreport/data/admdashlet/adm/agent", xmlDoc, XPathConstants.NODESET);
-			log.fine("Number of Unique xpathNodeList: " + xpathNodeList.getLength());
-					
+			log.finer("number of unique tiers = " + xpathNodeList.getLength());
+			
 			//count number of unique rows
 			if (xpathNodeList.getLength() >= 1)
 			{
-				
 				for (int i = 0; i < xpathNodeList.getLength(); ++i){
-					log.finer("i: " + i);
+					log.finer("tier noder list iteration: " + i);
 					String tempString = xpathNodeList.item(i).getAttributes().getNamedItem(splitOption).toString();
-					log.fine("tempString orig: " + tempString);
+					log.finer("tempString orig: " + tempString);
 					String changedTempString = tempString.replaceAll("\"","").replace(splitOption + "=","");
 					log.finer("tempString chg: " + changedTempString);
 					uniqueTierSet.add(changedTempString);
 				}
 			}	
 					
-			log.fine("Number of Unique Rows: " + uniqueTierSet.size());
+			log.finer("number of unique rows = " + uniqueTierSet.size());
 			String[] tempStringArray = uniqueTierSet.toArray(new String[0]);
 										
 			//loop through array of unique tiers
 			for (int j = 0; j < uniqueTierSet.size(); ++j){
-				log.finer("Splitting for Row: " + tempStringArray[j]);
-				String tempString = tempStringArray[j];
-				log.fine("Splitting for tempString: " + tempString);
-				dynamicMetric(env, xpath, tempString, xmlDoc);
-			}	
-				
-		
+				log.finer("Splitting for tempString: " + tempStringArray[j]);
+				dynamicMetric(env, xpath, tempStringArray[j], xmlDoc);
+			}
+			
 		} catch (ClientProtocolException e) {
 			log.severe("ClientProtocolException: " + e);
 			return new Status(Status.StatusCode.ErrorInternal);
@@ -253,12 +255,11 @@ public class TierTimeMonitor implements Monitor {
 			return new Status(Status.StatusCode.ErrorInternal);
 		}
 		
-		log.fine("Exiting execute method");
-		log.fine("*****END PLUGIN LOGGING*****");
+		log.finer("Exiting execute method");
+		log.finer("*****END PLUGIN LOGGING*****");
 		
 		return new Status(Status.StatusCode.Success);
 	}
-	
 	
 	/**
 	 * Converts an attribute map from a NamedNodeMap objejt to a String value.
@@ -276,185 +277,143 @@ public class TierTimeMonitor implements Monitor {
 	 *			xmlDoc
 	 *          	a document objectobject that contains the parsed xml response
 	 */
-	private void dynamicMetric(MonitorEnvironment env, XPath xpath, String tempStringMeasure, Document xmlDoc) throws XPathExpressionException {
+	private void dynamicMetric(MonitorEnvironment env, XPath xpath, String tempStringMeasure, Document xmlDoc) throws XPathExpressionException, NullPointerException {
 		
-		log.fine("Entering dynamicMetrics method");
+		log.finer("Entering dynamicMetrics method");
 		
-		//assign strign as a variable to use in xPath evaluate statement
-		MapVariableResolver vr = new MapVariableResolver() ;
+		//assign string as a variable to use in xPath evaluate statement
+		MapVariableResolver vr = new MapVariableResolver();
 		vr.setVariable("myVar", tempStringMeasure);
 		xpath.setXPathVariableResolver(vr);
 		log.fine("myVar: " + vr.resolveVariable( new QName ("myVar")));
 		NodeList tierNodeList = null;
-		
+		NodeList countNodeList = null;
+			
 		if (splitOption.equals("name")){
-			log.fine("splitOption = name");
+			log.finer("dynamicMetric splitOption = name");
 			tierNodeList = (NodeList) xpath.evaluate("/dashboardreport/data/admdashlet/adm/agent[contains(@name, $myVar)]", xmlDoc, XPathConstants.NODESET);
+			countNodeList = (NodeList) xpath.evaluate("/dashboardreport/data/admdashlet/adm_links/agent[contains(@to, $myVar)]", xmlDoc, XPathConstants.NODESET); //new for count
 		}
 		else if (splitOption.equals("group")){
-			log.fine("splitOption = group");
+			log.finer("dynamicMetric splitOption = group");
 			tierNodeList = (NodeList) xpath.evaluate("/dashboardreport/data/admdashlet/adm/agent[contains(@group, $myVar)]", xmlDoc, XPathConstants.NODESET);
 		}
 		
 		else if (splitOption.equals("technology")){
-			log.fine("splitOption = technology");
+			log.finer("dynamicMetric splitOption = technology");
 			tierNodeList = (NodeList) xpath.evaluate("/dashboardreport/data/admdashlet/adm/agent[contains(@technology, $myVar)]", xmlDoc, XPathConstants.NODESET);
 		}
-		log.fine("Size tierNodeList: " + tierNodeList.getLength());
 		
-		if ((measures = env.getMonitorMeasures(METRIC_GROUP, MSR_ResponseTime)) != null) {
-			
-			List<Double> resultList = new ArrayList<Double>();
-			double responseTime = 0;
-			
-			for (int i = 0; i < tierNodeList.getLength(); ++i){
-				log.fine("Entering dynamicMetrics for Loop");				
-				String attributesAsString = getAttributesAsString(tierNodeList.item(i).getAttributes());
-				log.fine("NodeName " + tierNodeList.item(i).getNodeName() + " " + attributesAsString);
-				if (attributesAsString.contains(responseTimeMeasure)){
-					log.fine("Entering dynamicMetrics for Loop If Statement");
-					String tempString = tierNodeList.item(i).getAttributes().getNamedItem(responseTimeMeasure).toString();
-					log.fine("tempString: " + tempString);
-					String stringAsDouble = tempString.replaceAll("\"","").replaceAll(responseTimeMeasure + "=","");
-					responseTime = Double.parseDouble(stringAsDouble);
-					log.fine("responseTime: " + responseTime);
-					resultList.add(responseTime);
-				}
-				responseTime = 0;
-			}
-			
-			log.fine("Calculating Average");
-			for (int r = 0; r < resultList.size(); ++r){
-				responseTime = responseTime + resultList.get(r);
-			}
-			
-			if (resultList.size() >= 1){
-				responseTime = responseTime / resultList.size();
-				log.fine("responseTime Avg: " + responseTime);
+		log.finer("Size tierNodeList: " + tierNodeList.getLength());
 				
-				log.fine("Assigning Measure Value");
-				for (MonitorMeasure measure : measures){
-					if (measure.getParameter("Tier Filter").equals("none")){
-						log.fine("MeasureName: " + measure.getMeasureName());	
-						log.fine("getParameter: " + measure.getParameter("Tier Filter"));
-						dynamicMeasure = env.createDynamicMeasure(measure, "Tier", tempStringMeasure);
-						dynamicMeasure.setValue(responseTime);
-					}
-					else if (measure.getParameter("Tier Filter").equals(tempStringMeasure)){
-						log.fine("MeasureName: " + measure.getMeasureName());	
-						log.fine("getParameter: " + measure.getParameter("Tier Filter"));
-						dynamicMeasure = env.createDynamicMeasure(measure, "Tier", tempStringMeasure);
-						dynamicMeasure.setValue(responseTime);
-					}
-					
-				}
-			}
+		//Response Time
+		if ((measures = env.getMonitorMeasures(METRIC_GROUP_1, MSR_ResponseTime)) != null && !measures.isEmpty()) {					
+			log.fine("**************Measure Response Time*****************");
+			assignMeasureValue(env, tempStringMeasure, calculateMapAvg(getResultMap(tierNodeList, responseTimeMeasure, "name")));
 		}
 		
 		
-		//Exec Time
-		if ((measures = env.getMonitorMeasures(METRIC_GROUP, MSR_ExecTime)) != null) {
-			
-			List<Double> resultList = new ArrayList<Double>();
-			Double execTime = 0.0;
-			
-			for (int i = 0; i < tierNodeList.getLength(); ++i){
-				log.fine("Entering dynamicMetrics for Loop");				
-				String attributesAsString = getAttributesAsString(tierNodeList.item(i).getAttributes());
-				log.fine("NodeName " + tierNodeList.item(i).getNodeName() + " " + attributesAsString);
-				if (attributesAsString.contains(execTimeMeasure)){
-					log.fine("Entering dynamicMetrics for Loop If Statement");
-					String tempString = tierNodeList.item(i).getAttributes().getNamedItem(execTimeMeasure).toString();
-					log.fine("tempString: " + tempString);
-					String stringAsDouble = tempString.replaceAll("\"","").replaceAll(execTimeMeasure + "=","");
-					execTime = Double.parseDouble(stringAsDouble);
-					log.fine("execTime: " + execTime);
-					resultList.add(execTime);
-				}
-				execTime = 0.0;
-			}
-			
-			log.fine("Calculating Average");
-			for (int r = 0; r < resultList.size(); ++r){
-				execTime = execTime + resultList.get(r);
-			}
-			
-			if (resultList.size() >= 1){
-				execTime = execTime / resultList.size();
-				log.fine("execTime Avg: " + execTime);
-				
-				log.fine("Assigning Measure Value");
-				for (MonitorMeasure measure : measures){
-					if (measure.getParameter("Tier Filter").equals("none")){
-						log.fine("MeasureName: " + measure.getMeasureName());	
-						log.fine("getParameter: " + measure.getParameter("Tier Filter"));
-						dynamicMeasure = env.createDynamicMeasure(measure, "Tier", tempStringMeasure);
-						dynamicMeasure.setValue(execTime);
-					}
-					else if (measure.getParameter("Tier Filter").equals(tempStringMeasure)){
-						log.fine("MeasureName: " + measure.getMeasureName());	
-						log.fine("getParameter: " + measure.getParameter("Tier Filter"));
-						dynamicMeasure = env.createDynamicMeasure(measure, "Tier", tempStringMeasure);
-						dynamicMeasure.setValue(execTime);
-					}
-					
-				}
-			}
+		//Exec Time		
+		if ((measures = env.getMonitorMeasures(METRIC_GROUP_1, MSR_ExecTime)) != null && !measures.isEmpty()) {
+			log.fine("**************Measure Execution Time*****************");
+			assignMeasureValue(env, tempStringMeasure, calculateMapAvg(getResultMap(tierNodeList, execTimeMeasure, "name")));
 		}
 		
 		
 		//Exec CPU Time
-		if ((measures = env.getMonitorMeasures(METRIC_GROUP, MSR_ExecCPUTime)) != null) {
-			
-			List<Double> resultList = new ArrayList<Double>();
-			double execCPUTime = 0;
-			
-			for (int i = 0; i < tierNodeList.getLength(); ++i){
-				log.fine("Entering dynamicMetrics for Loop");				
-				String attributesAsString = getAttributesAsString(tierNodeList.item(i).getAttributes());
-				log.fine("NodeName " + tierNodeList.item(i).getNodeName() + " " + attributesAsString);
-				if (attributesAsString.contains(execCPUTimeMeasure)){
-					log.fine("Entering dynamicMetrics for Loop If Statement");
-					String tempString = tierNodeList.item(i).getAttributes().getNamedItem(execCPUTimeMeasure).toString();
-					log.fine("tempString: " + tempString);
-					String stringAsDouble = tempString.replaceAll("\"","").replaceAll(execCPUTimeMeasure + "=","");
-					execCPUTime = Double.parseDouble(stringAsDouble);
-					log.fine("execCPUTime: " + execCPUTime);
-					resultList.add(execCPUTime);
-				}
-				execCPUTime = 0;
-			}
-			
-			log.fine("Calculating Average");
-			for (int r = 0; r < resultList.size(); ++r){
-				execCPUTime = execCPUTime + resultList.get(r);
-			}
-			
-			if (resultList.size() >= 1){
-				execCPUTime = execCPUTime / resultList.size();
-				log.fine("execCPUTime Avg: " + execCPUTime);
-				
-				log.fine("Assigning Measure Value");
-				for (MonitorMeasure measure : measures){
-					if (measure.getParameter("Tier Filter").equals("none")){
-						log.fine("MeasureName: " + measure.getMeasureName());	
-						log.fine("getParameter: " + measure.getParameter("Tier Filter"));
-						dynamicMeasure = env.createDynamicMeasure(measure, "Tier", tempStringMeasure);
-						dynamicMeasure.setValue(execCPUTime);
-					}
-					else if (measure.getParameter("Tier Filter").equals(tempStringMeasure)){
-						log.fine("MeasureName: " + measure.getMeasureName());	
-						log.fine("getParameter: " + measure.getParameter("Tier Filter"));
-						dynamicMeasure = env.createDynamicMeasure(measure, "Tier", tempStringMeasure);
-						dynamicMeasure.setValue(execCPUTime);
-					}
-				}
-			}				
+		if ((measures = env.getMonitorMeasures(METRIC_GROUP_1, MSR_ExecCPUTime)) != null && !measures.isEmpty()) {
+			log.fine("**************Measure Execution CPU Time*****************");
+			assignMeasureValue(env, tempStringMeasure, calculateMapAvg(getResultMap(tierNodeList, execCPUTimeMeasure, "name")));
 		}
 		
-		log.fine("Exiting dynamicMetricsCollector method");
-	}
+		
+		//Transaction Count
+		try{
+			if ((measures = env.getMonitorMeasures(METRIC_GROUP_2, MSR_TransactionCount)) != null && !measures.isEmpty()) {
+				
+				log.fine("*******************Measure TransactionCount*****************");
+				
+				HashMap<String, Double> transactionCountMap = getResultMap(countNodeList, transactionCountMeasure, "to");
+				log.fine("transactionCountMap size= " + transactionCountMap.size());
+				
+				for(Map.Entry<String, Double> m:transactionCountMap.entrySet()){  
+					log.fine("Map Entry: " + m.getKey() + " " + m.getValue());
+					assignMeasureValue(env, m.getKey(), m.getValue());				
+				}	
+	  
+			} 
+		} 
+		catch (NullPointerException e){
+			log.severe("Exception: " + e);
+			log.severe("Transaction Count can only be calculated with Agent Name splitting. Please adjust your monior configuration.");
+		}
+		
+		//Transaction Count Rate
+		try {
+			if ((measures = env.getMonitorMeasures(METRIC_GROUP_2, MSR_TransactionCountRate)) != null && !measures.isEmpty()) {
+				
+				log.fine("*******************Measure TransactionCount Rate*****************");
+				
+				HashMap<String, Double> transactionCountRateMap = getResultMap(countNodeList, transactionCountMeasure, "to");
+				log.finer("transactionCountRateMap size= " + transactionCountRateMap.size());
+				
+				log.fine("Calculating Sum");
+				double transactionCountSum = calculateSum(transactionCountRateMap);			
+				log.fine("count Sum: " + transactionCountSum);
+				
+				for(Map.Entry<String,Double> m:transactionCountRateMap.entrySet()){  
+					log.fine("Map Entry: " + m.getKey() + " " + m.getValue());
+					double transactionCountRate = m.getValue()/transactionCountSum;
+					transactionCountRate = Math.round(transactionCountRate * 10000d) / 10000d;
+					transactionCountRate = transactionCountRate*100;
+					log.fine("transactionCountRate = " + transactionCountRate + "%");
+					assignMeasureValue(env, m.getKey(), transactionCountRate);				
+				}
 
+			}
+		} 
+		catch (NullPointerException e){
+			log.severe("Exception: " + e);
+			log.severe("Transaction Count Rate can only be calculated with Agent Name splitting. Please adjust your monior configuration.");
+		}
+		
+		log.finer("Exiting dynamicMetricsCollector method");	
+	}
+	
+	private void assignMeasureValue(MonitorEnvironment env, String measureSplitName, double resultValue) {
+		
+		log.finer("Assigning Measure Value");
+		
+		String comparisonString = measureSplitName;
+		
+		if (measureSplitName.contains("@")){
+			String[] parts = measureSplitName.split("@");
+			comparisonString = parts[0];
+		}
+		
+		for (MonitorMeasure measure : measures){			
+			log.info(measure.getMeasureName() + " for " + measureSplitName + " = " + resultValue);
+			log.fine("Measure Name: " + measure.getMeasureName());
+			log.fine("Measure Split Name: " + measureSplitName);
+			log.fine("Measure Comparison String: " + comparisonString);
+			log.fine("Parameter: " + measure.getParameter("Tier Filter"));
+			
+			if (measure.getParameter("Tier Filter").equals("none")){			
+				dynamicMeasure = env.createDynamicMeasure(measure, "Tier", measureSplitName);
+				dynamicMeasure.setValue(resultValue);
+			}
+			else if (measure.getParameter("Tier Filter").equals(comparisonString)){
+				dynamicMeasure = env.createDynamicMeasure(measure, "Tier", measureSplitName);
+				dynamicMeasure.setValue(resultValue);
+			}
+			/* else {
+				log.fine("MeasureName: " + measure.getMeasureName());
+				dynamicMeasure = env.createDynamicMeasure(measure, "Tier", measureSplitName);
+				dynamicMeasure.setValue(resultValue);
+			} */			
+		}
+	}
+	
 	/**
 	 * Shuts the Plugin down and frees resources.
 	 * 
@@ -478,13 +437,14 @@ public class TierTimeMonitor implements Monitor {
 		responseTimeMeasure = null;
 		execTimeMeasure = null;
 		execCPUTimeMeasure = null;
+		transactionCountMeasure = null;
 		dynaTraceURL = null;
+		measures = null;
 	}	
-	
 	
 	public static void disableCertificateValidation() {
 		
-		log.fine("Entering disableCertificateValidation method");  
+		log.finer("Entering disableCertificateValidation method");  
 		
 		// Create a trust manager that does not validate certificate chains
 		  TrustManager[] trustAllCerts = new TrustManager[] { 
@@ -497,7 +457,7 @@ public class TierTimeMonitor implements Monitor {
 		  }};
 
 		  // Ignore differences between given hostname and certificate hostname
-		  HostnameVerifier hv = new HostnameVerifier() {
+			HostnameVerifier hv = new HostnameVerifier() {
 		    public boolean verify(String hostname, SSLSession session) { return true; }
 		  };
 
@@ -509,7 +469,7 @@ public class TierTimeMonitor implements Monitor {
 		    HttpsURLConnection.setDefaultHostnameVerifier(hv);
 		  } catch (Exception e) {}
 		  
-		  log.fine("Leaving disableCertificateValidation method");
+		  log.finer("Leaving disableCertificateValidation method");
 	}
 	
 	/**
@@ -526,5 +486,75 @@ public class TierTimeMonitor implements Monitor {
 			sb.append("\t- ").append(attributes.item(j).getNodeName()).append(": ").append(attributes.item(j).getNodeValue()).append("\n");
 		}
 		return sb.toString();
+	}
+	
+	private HashMap<String, Double> getResultMap(NodeList measureList, String measureName, String agentNameField) {
+		
+		log.finer("Entering getResultList Method");		
+		
+		double resultMeasure = 0;
+		HashMap<String, Double> resultMap = new HashMap<String, Double>();  
+			
+		for (int i = 0; i < measureList.getLength(); ++i){
+			log.finer("measureList iteration = " + i);
+			String attributesAsString = getAttributesAsString(measureList.item(i).getAttributes());
+			log.finer("NodeName " + measureList.item(i).getNodeName() + " " + attributesAsString);
+			
+			if (attributesAsString.contains(measureName)){
+				String tempString = measureList.item(i).getAttributes().getNamedItem(measureName).toString();
+				log.finer("tempString: " + tempString);
+				String stringAsDouble = tempString.replaceAll("\"","").replaceAll(measureName + "=","");
+				resultMeasure = Double.parseDouble(stringAsDouble);
+				log.finer("resultMeasure: " + resultMeasure);
+				
+				String tempAgentName = measureList.item(i).getAttributes().getNamedItem(agentNameField).toString();
+				log.finer("tempAgentName: " + tempAgentName);
+				tempAgentName = tempAgentName.replaceAll("\"","").replaceAll((agentNameField + "="),"");
+				log.finer("Agent Name: " + tempAgentName);
+				
+				resultMap.put(tempAgentName,resultMeasure);
+			}
+			resultMeasure = 0;
+		}
+		
+		return resultMap;
+	}
+	
+	private double calculateMapAvg(HashMap<String, Double> valuesMap) {
+		
+		log.fine("Calculating Average");
+		
+		double averageTime = 0;
+		int i = 0;
+		
+		
+		for(Map.Entry<String,Double> value:valuesMap.entrySet()){  
+			log.fine("Map Entry: " + value.getKey() + " " + value.getValue());
+			averageTime = averageTime + value.getValue();
+			i++;
+		}		
+			
+		if (i >= 1){
+			averageTime = averageTime / i;
+		}
+		
+		log.fine("Average = " + averageTime);
+		
+		return averageTime;
+	}
+	
+	private double calculateSum(HashMap<String, Double>  valuesMap) {
+		
+		log.fine("Calculating Sum");
+		double sumValue = 0;		
+		
+		for(Map.Entry<String,Double> value:valuesMap.entrySet()){  
+			log.fine("Map Entry: " + value.getKey() + " " + value.getValue());
+			sumValue = sumValue +  value.getValue();			
+		}
+		
+		log.fine("Sum: " + sumValue);
+		
+		return sumValue;
 	}
 }

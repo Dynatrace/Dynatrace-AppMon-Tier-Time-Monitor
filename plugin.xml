@@ -2,10 +2,10 @@
 <?eclipse version="3.2"?>
 <!-- plugin.xml file written by dynaTrace Client 6.2.2 -->
 <plugin>
-  <extension point="com.dynatrace.diagnostics.pdk.pluginconfig" id="com.dynatrace.TierTimeMonitor" name="Tier Time Monitor">
+  <extension point="com.dynatrace.diagnostics.pdk.pluginconfig" id="com.dynatrace.TierPerformanceMetricsMonitor" name="Tier Performance Metrics Monitor">
     <information>
       <category value="" />
-      <displayname value="Tier Time Monitor" />
+      <displayname value="Tier Performance Metrics Monitor" />
       <description value="Retrieves the time spent per tier" />
       <supportlevel value="unsupported" />
     </information>
@@ -91,11 +91,11 @@
       </property>
     </configuration>
   </extension>
-  <extension point="com.dynatrace.diagnostics.pdk.monitor" id="com.dynatrace.TierTimeMonitor.monitor" name="Tier Time Monitor">
-    <plugin configid="com.dynatrace.TierTimeMonitor" class="com.dynatrace.monitor.TierTimeMonitor" />
+  <extension point="com.dynatrace.diagnostics.pdk.monitor" id="com.dynatrace.TierPerformanceMetricsMonitor.monitor" name="Tier Performance Metrics Monitor">
+    <plugin configid="com.dynatrace.TierPerformanceMetricsMonitor" class="com.dynatrace.monitor.TierTimeMonitor" />
   </extension>
-  <extension point="com.dynatrace.diagnostics.pdk.monitormetricgroup" id="com.dynatrace.TierTimeMonitor.monitor.metricgroup" name="Tier Time">
-    <metricgroup monitorid="com.dynatrace.TierTimeMonitor.monitor">
+  <extension point="com.dynatrace.diagnostics.pdk.monitormetricgroup" id="com.dynatrace.TierPerformanceMetricsMonitor.metricgroup1" name="Tier Time">
+    <metricgroup monitorid="com.dynatrace.TierPerformanceMetricsMonitor.monitor">
       <metric defaultrate="purepath" name="Response Time" unit="ms" description="response time from tier">
         <property key="Tier Filter" value="none" optional="false" />
       </metric>
@@ -103,6 +103,16 @@
         <property key="Tier Filter" value="none" optional="false" />
       </metric>
       <metric defaultrate="purepath" name="Execution CPU Time" unit="ms" description="execution CPU time per tier">
+        <property key="Tier Filter" value="none" optional="false" />
+      </metric>
+    </metricgroup>
+  </extension>
+  <extension point="com.dynatrace.diagnostics.pdk.monitormetricgroup" id="com.dynatrace.TierPerformanceMetricsMonitor.metricgroup2" name="Tier Count">
+    <metricgroup monitorid="com.dynatrace.TierPerformanceMetricsMonitor.monitor">
+      <metric defaultrate="purepath" name="Transaction Count" unit="number" description="Counts the number of transactions per agent">
+        <property key="Tier Filter" value="none" optional="false" />
+      </metric>
+      <metric defaultrate="purepath" name="Transaction Count Rate" unit="percent" description="Calculates the split of transactions between agents in the same tier. Excellent for load balance monitoring.">
         <property key="Tier Filter" value="none" optional="false" />
       </metric>
     </metricgroup>
