@@ -6,7 +6,7 @@
     <information>
       <category value="" />
       <displayname value="Tier Performance Metrics Monitor" />
-      <description value="Retrieves the time spent per tier" />
+      <description value="Retrieves time and count metrics for each tier" />
       <supportlevel value="unsupported" />
     </information>
     <configuration>
