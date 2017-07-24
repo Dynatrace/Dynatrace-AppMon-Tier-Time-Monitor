@@ -385,11 +385,9 @@ public class TierTimeMonitor implements Monitor {
 		log.finer("Assigning Measure Value");
 		
 		String comparisonString = measureSplitName;
-		
-		if (measureSplitName.contains("@")){
-			String[] parts = measureSplitName.split("@");
-			comparisonString = parts[0];
-		}
+		String[] parts = measureSplitName.split("@");
+		String [] parts2 = parts[0].split("\\[");
+		comparisonString = parts2[0];
 		
 		for (MonitorMeasure measure : measures){			
 			log.info(measure.getMeasureName() + " for " + measureSplitName + " = " + resultValue);
@@ -399,11 +397,11 @@ public class TierTimeMonitor implements Monitor {
 			log.fine("Parameter: " + measure.getParameter("Tier Filter"));
 			
 			if (measure.getParameter("Tier Filter").equals("none")){			
-				dynamicMeasure = env.createDynamicMeasure(measure, "Tier", measureSplitName);
+				dynamicMeasure = env.createDynamicMeasure(measure, splitOption, measureSplitName);
 				dynamicMeasure.setValue(resultValue);
 			}
 			else if (measure.getParameter("Tier Filter").equals(comparisonString)){
-				dynamicMeasure = env.createDynamicMeasure(measure, "Tier", measureSplitName);
+				dynamicMeasure = env.createDynamicMeasure(measure, splitOption, measureSplitName);
 				dynamicMeasure.setValue(resultValue);
 			}
 			/* else {
